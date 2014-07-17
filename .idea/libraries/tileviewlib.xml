@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="tileviewlib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/wear/libs/tileviewlib.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
