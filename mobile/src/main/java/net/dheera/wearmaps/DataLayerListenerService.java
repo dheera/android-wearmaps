@@ -1,41 +1,70 @@
 package net.dheera.wearmaps;
 
-import android.app.Activity;
-import android.graphics.drawable.Drawable;
-import android.hardware.Camera;
+import android.content.Context;
+import android.content.Intent;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.widget.ImageView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.data.FreezableUtils;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
+import com.google.android.gms.wearable.WearableListenerService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
-public class MyActivity extends Activity {
+/**
+ * Created by Dheera Venkatraman
+ * http://dheera.net
+ */
+public class DataLayerListenerService extends WearableListenerService {
+
     private static final String TAG = "WearMaps";
     private static final boolean D = true;
 
     GoogleApiClient mGoogleApiClient;
+    LocationManager mLocationManager;
+    LocationListener mLocationListener;
     private Node mWearableNode = null;
 
-    // private int mScreenWidth = getApplicationContext().getResources().getDisplayMetrics().widthPixels;
-    // private int mScreenHeight = getApplicationContext().getResources().getDisplayMetrics().heightPixels;
+    private void sendToWearable(String path, byte[] data, final ResultCallback<MessageApi.SendMessageResult> callback) {
+        if (mWearableNode != null) {
+            PendingResult<MessageApi.SendMessageResult> pending = Wearable.MessageApi.sendMessage(mGoogleApiClient, mWearableNode.getId(), path, data);
+            pending.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                @Override
+                public void onResult(MessageApi.SendMessageResult result) {
+                    if (callback != null) {
+                        callback.onResult(result);
+                    }
+                    if (!result.getStatus().isSuccess()) {
+                        if(D) Log.d(TAG, "ERROR: failed to send Message: " + result.getStatus());
+                    }
+                }
+            });
+        } else {
+            if(D) Log.d(TAG, "ERROR: tried to send message before device was found");
+        }
+    }
 
     void findWearableNode() {
         PendingResult<NodeApi.GetConnectedNodesResult> nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient);
@@ -45,12 +74,37 @@ public class MyActivity extends Activity {
                 if(result.getNodes().size()>0) {
                     mWearableNode = result.getNodes().get(0);
                     if(D) Log.d(TAG, "Found wearable: name=" + mWearableNode.getDisplayName() + ", id=" + mWearableNode.getId());
-                    sendToWearable("start", null, null);
+
                 } else {
                     mWearableNode = null;
                 }
             }
         });
+    }
+
+    private void onMessageStart() {
+        Log.d(TAG, "onMessageStart");
+        if(mLocationManager != null) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+        }
+    }
+
+    private void onMessageStop() {
+        Log.d(TAG, "onMessageStop");
+        if(mLocationManager != null) {
+            mLocationManager.removeUpdates(mLocationListener);
+        }
+    }
+
+    private void onMessageLocate() {
+        Log.d(TAG, "onMessageLocate");
+        if(mLocationManager != null) {
+            Criteria criteria = new Criteria();
+            String bestProvider = mLocationManager.getBestProvider(criteria, false);
+            Location location = mLocationManager.getLastKnownLocation(bestProvider);
+            if(D) Log.d(TAG, String.format("last known location: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
+            sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+        }
     }
 
     private void onMessageGet(int y, int x, double latitude, double longitude, int googleZoom) {
@@ -121,24 +175,27 @@ public class MyActivity extends Activity {
         return bytes;
     }
 
-    /*
-    public static Drawable loadImageFromWebOperations(String url) {
-        try {
-            InputStream is = (InputStream) new URL(url).getContent();
-            Drawable d = Drawable.createFromStream(is, "src name");
-            return d;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    */
-
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_my);
+    public void onCreate() {
+        if(D) Log.d(TAG, "onCreate");
+        super.onCreate();
 
+        Looper.prepare();
 
+        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        mLocationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                if(D) Log.d(TAG, String.format("onLocationChanged: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
+                sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+            }
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+            public void onProviderEnabled(String provider) {}
+
+            public void onProviderDisabled(String provider) {}
+        };
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -165,6 +222,12 @@ public class MyActivity extends Activity {
                                     double longitude = scanner.nextDouble();
                                     int googleZoom = scanner.nextInt();
                                     onMessageGet(y, x, latitude, longitude, googleZoom);
+                                } if(requestType.equals("locate")) {
+                                    onMessageLocate();
+                                } if(requestType.equals("start")) {
+                                    onMessageStart();
+                                } if(requestType.equals("stop")) {
+                                    onMessageStop();
                                 }
                             }
                         });
@@ -184,70 +247,31 @@ public class MyActivity extends Activity {
                 .build();
 
         mGoogleApiClient.connect();
-    }
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.my, menu);
-        return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+    public void onDestroy() {
+        if(D) Log.d(TAG, "onDestroy");
+        super.onDestroy();
     }
-
-    private void sendToWearable(String path, byte[] data, final ResultCallback<MessageApi.SendMessageResult> callback) {
-        if (mWearableNode != null) {
-            PendingResult<MessageApi.SendMessageResult> pending = Wearable.MessageApi.sendMessage(mGoogleApiClient, mWearableNode.getId(), path, data);
-            pending.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                @Override
-                public void onResult(MessageApi.SendMessageResult result) {
-                    if (callback != null) {
-                        callback.onResult(result);
-                    }
-                    if (!result.getStatus().isSuccess()) {
-                        if(D) Log.d(TAG, "ERROR: failed to send Message: " + result.getStatus());
-                    }
-                }
-            });
-        } else {
-            if(D) Log.d(TAG, "ERROR: tried to send message before device was found");
+    @Override
+    public void onPeerConnected(Node peer) {
+        if(D) Log.d(TAG, "onPeerConnected");
+        super.onPeerConnected(peer);
+        if(D) Log.d(TAG, "Connected: name=" + peer.getDisplayName() + ", id=" + peer.getId());
+    }
+    @Override
+    public void onMessageReceived(MessageEvent m) {
+        if(D) Log.d(TAG, "onMessageReceived: " + m.getPath());
+        if(m.getPath().equals("/start")) {
+            Intent startIntent = new Intent(this, MainActivity.class);
+            startIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(startIntent);
         }
     }
-
-    private class ImageRequester extends Thread {
-        private volatile boolean paused = false;
-        private final Object signal = new Object();
-        public void run() {
-            while(true) {
-                while(paused) {
-                    try { synchronized(signal) { signal.wait(); } }
-                    catch(InterruptedException e) { }
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    // interrupted, no problem
-                }
-            }
-        }
-        public void setPaused() {
-            paused = true;
-        }
-        public void setUnpaused() {
-            paused = false;
-            synchronized(signal) { signal.notify(); }
-            this.interrupt();
-        }
+    @Override
+    public void onDataChanged(DataEventBuffer dataEvents) {
+        // i don't care
     }
 }
