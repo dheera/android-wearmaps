@@ -1,4 +1,4 @@
-package wearmaps.net.dheera.wearmaps;
+package net.dheera.wearmaps;
 
 import android.app.Activity;
 import android.graphics.drawable.Drawable;
@@ -45,7 +45,7 @@ public class MyActivity extends Activity {
                 if(result.getNodes().size()>0) {
                     mWearableNode = result.getNodes().get(0);
                     if(D) Log.d(TAG, "Found wearable: name=" + mWearableNode.getDisplayName() + ", id=" + mWearableNode.getId());
-                    sendToWearable("/start", null, null);
+                    sendToWearable("start", null, null);
                 } else {
                     mWearableNode = null;
                 }
@@ -53,30 +53,31 @@ public class MyActivity extends Activity {
         });
     }
 
-    private void onMessageGet(byte[] data) {
-        if(D) Log.d(TAG, "processGet");
-        String dataString = new String(data);
-        if(D) Log.d(TAG, dataString);
+    private void onMessageGet(int y, int x, double latitude, double longitude, int googleZoom) {
+        if(D) Log.d(TAG, String.format("onMessageGet(%f, %f, %d)", latitude, longitude, googleZoom));
 
-        Scanner scanner = new Scanner(dataString);
-        double latitude = Double.parseDouble(scanner.next());
-        double longitude = Double.parseDouble(scanner.next());
-        byte[] outdata = null;
+        // request from wearable comes as byte[]
+        // but is actually an ASCII string
+        // containing 3 parameters formatted
+        // as "latitude longitude googleZoom"
+
+        final String maptype = "roadmap";
+        final String format = "jpg";
+
         InputStream is;
-
-
         String url = String.format(
-                "http://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=16&size=640x640&maptype=roadmap&format=jpg",
-                latitude, longitude);
+                "http://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=%d&size=512x512&maptype=%s&format=%s",
+                latitude, longitude, googleZoom, maptype, format);
 
-        if(D) Log.d(TAG, "url: " + url);
+        if(D) Log.d(TAG, "onMessageGet: url: " + url);
 
         try {
-            outdata = downloadUrl(new URL(url));
+            // download the image and send it to the wearable
+            byte[] outdata = downloadUrl(new URL(url));
             if(D) Log.d(TAG, String.format("read %d bytes", outdata.length));
-            sendToWearable("/response", outdata, null);
+            sendToWearable(String.format("response %d %d %f %f %d", y, x, latitude, longitude, googleZoom), outdata, null);
         } catch (Exception e) {
-            Log.e(TAG, "processGet: Exception:", e);
+            Log.e(TAG, "onMessageGet: exception:", e);
         }
     }
 
@@ -148,8 +149,22 @@ public class MyActivity extends Activity {
                         Wearable.MessageApi.addListener(mGoogleApiClient, new MessageApi.MessageListener() {
                             @Override
                             public void onMessageReceived (MessageEvent m){
-                                if(m.getPath().equals("/get")) {
-                                    onMessageGet(m.getData());
+                                if(D) Log.d(TAG, "onMessageReceived");
+                                if(D) Log.d(TAG, "path: " + m.getPath());
+                                if(D) Log.d(TAG, "data bytes: " + m.getData().length);
+
+                                Scanner scanner = new Scanner(m.getPath());
+                                String requestType = scanner.next();
+
+                                if(D) Log.d(TAG, "requestType: " + requestType);
+
+                                if(requestType.equals("get")) {
+                                    int y = scanner.nextInt();
+                                    int x = scanner.nextInt();
+                                    double latitude = scanner.nextDouble();
+                                    double longitude = scanner.nextDouble();
+                                    int googleZoom = scanner.nextInt();
+                                    onMessageGet(y, x, latitude, longitude, googleZoom);
                                 }
                             }
                         });

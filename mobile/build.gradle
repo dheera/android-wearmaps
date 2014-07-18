@@ -5,7 +5,7 @@ android {
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "wearmaps.net.dheera.wearmaps"
+        applicationId "net.dheera.wearmaps"
         minSdkVersion 14
         targetSdkVersion 20
         versionCode 1
