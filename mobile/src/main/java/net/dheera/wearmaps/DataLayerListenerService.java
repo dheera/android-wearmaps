@@ -12,10 +12,13 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.data.FreezableUtils;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageApi;
@@ -30,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -37,15 +41,23 @@ import java.util.concurrent.TimeUnit;
  * Created by Dheera Venkatraman
  * http://dheera.net
  */
-public class DataLayerListenerService extends WearableListenerService {
+public class DataLayerListenerService extends WearableListenerService implements FusedLocationListener.LocationListener {
 
-    private static final String TAG = "WearMaps";
+    private static final String TAG = "WearMaps/" + String.valueOf((new Random()).nextInt(10000));
     private static final boolean D = true;
 
     GoogleApiClient mGoogleApiClient;
     LocationManager mLocationManager;
     LocationListener mLocationListener;
     private Node mWearableNode = null;
+    FusedLocationListener mFusedLocationListener;
+
+    @Override
+    public void onReceiveLocation(Location location) {
+        if(D) Log.d(TAG, "onReceiveLocation");
+        if(D) Log.d(TAG, String.format("location: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
+        sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+    }
 
     private void sendToWearable(String path, byte[] data, final ResultCallback<MessageApi.SendMessageResult> callback) {
         if (mWearableNode != null) {
@@ -84,27 +96,20 @@ public class DataLayerListenerService extends WearableListenerService {
 
     private void onMessageStart() {
         Log.d(TAG, "onMessageStart");
-        if(mLocationManager != null) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+        if(mFusedLocationListener != null) {
+            mFusedLocationListener.start();
         }
     }
 
     private void onMessageStop() {
         Log.d(TAG, "onMessageStop");
-        if(mLocationManager != null) {
-            mLocationManager.removeUpdates(mLocationListener);
+        if(mFusedLocationListener != null) {
+            mFusedLocationListener.stop();
         }
     }
 
     private void onMessageLocate() {
         Log.d(TAG, "onMessageLocate");
-        if(mLocationManager != null) {
-            Criteria criteria = new Criteria();
-            String bestProvider = mLocationManager.getBestProvider(criteria, false);
-            Location location = mLocationManager.getLastKnownLocation(bestProvider);
-            if(D) Log.d(TAG, String.format("last known location: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
-            sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
-        }
     }
 
     private void onMessageGet(int y, int x, double latitude, double longitude, int googleZoom) {
@@ -179,7 +184,7 @@ public class DataLayerListenerService extends WearableListenerService {
     public void onCreate() {
         if(D) Log.d(TAG, "onCreate");
         super.onCreate();
-
+/*
         Looper.prepare();
 
         mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -195,42 +200,20 @@ public class DataLayerListenerService extends WearableListenerService {
             public void onProviderEnabled(String provider) {}
 
             public void onProviderDisabled(String provider) {}
-        };
+        };*/
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(Bundle connectionHint) {
                         if(D) Log.d(TAG, "onConnected: " + connectionHint);
-                        findWearableNode();
+                        findWearableNode();/*
                         Wearable.MessageApi.addListener(mGoogleApiClient, new MessageApi.MessageListener() {
                             @Override
                             public void onMessageReceived (MessageEvent m){
-                                if(D) Log.d(TAG, "onMessageReceived");
-                                if(D) Log.d(TAG, "path: " + m.getPath());
-                                if(D) Log.d(TAG, "data bytes: " + m.getData().length);
 
-                                Scanner scanner = new Scanner(m.getPath());
-                                String requestType = scanner.next();
-
-                                if(D) Log.d(TAG, "requestType: " + requestType);
-
-                                if(requestType.equals("get")) {
-                                    int y = scanner.nextInt();
-                                    int x = scanner.nextInt();
-                                    double latitude = scanner.nextDouble();
-                                    double longitude = scanner.nextDouble();
-                                    int googleZoom = scanner.nextInt();
-                                    onMessageGet(y, x, latitude, longitude, googleZoom);
-                                } if(requestType.equals("locate")) {
-                                    onMessageLocate();
-                                } if(requestType.equals("start")) {
-                                    onMessageStart();
-                                } if(requestType.equals("stop")) {
-                                    onMessageStop();
-                                }
                             }
-                        });
+                        });*/
                     }
                     @Override
                     public void onConnectionSuspended(int cause) {
@@ -248,6 +231,7 @@ public class DataLayerListenerService extends WearableListenerService {
 
         mGoogleApiClient.connect();
 
+        mFusedLocationListener = FusedLocationListener.getInstance(getApplicationContext(), this);
     }
 
     @Override
@@ -264,14 +248,33 @@ public class DataLayerListenerService extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent m) {
         if(D) Log.d(TAG, "onMessageReceived: " + m.getPath());
-        if(m.getPath().equals("/start")) {
-            Intent startIntent = new Intent(this, MainActivity.class);
-            startIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(startIntent);
+        if(D) Log.d(TAG, "onMessageReceived");
+        if(D) Log.d(TAG, "path: " + m.getPath());
+        if(D) Log.d(TAG, "data bytes: " + m.getData().length);
+
+        Scanner scanner = new Scanner(m.getPath());
+        String requestType = scanner.next();
+
+        if(D) Log.d(TAG, "requestType: " + requestType);
+
+        if(requestType.equals("get")) {
+            int y = scanner.nextInt();
+            int x = scanner.nextInt();
+            double latitude = scanner.nextDouble();
+            double longitude = scanner.nextDouble();
+            int googleZoom = scanner.nextInt();
+            onMessageGet(y, x, latitude, longitude, googleZoom);
+        } if(requestType.equals("locate")) {
+            onMessageLocate();
+        } if(requestType.equals("start")) {
+            onMessageStart();
+        } if(requestType.equals("stop")) {
+            onMessageStop();
         }
     }
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
         // i don't care
     }
+
 }
