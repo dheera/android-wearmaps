@@ -34,7 +34,7 @@ import java.util.Scanner;
 
 public class MainActivity extends Activity {
     private static final String TAG = "WearMaps";
-    private static final boolean D = true;
+    private static final boolean D = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

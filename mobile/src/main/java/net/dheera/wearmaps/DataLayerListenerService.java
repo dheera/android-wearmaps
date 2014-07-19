@@ -1,25 +1,22 @@
 package net.dheera.wearmaps;
 
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.data.FreezableUtils;
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
@@ -32,32 +29,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Dheera Venkatraman
  * http://dheera.net
  */
-public class DataLayerListenerService extends WearableListenerService implements FusedLocationListener.LocationListener {
+public class DataLayerListenerService extends WearableListenerService {
 
     private static final String TAG = "WearMaps/" + String.valueOf((new Random()).nextInt(10000));
-    private static final boolean D = true;
+    private static final boolean D = false;
 
     GoogleApiClient mGoogleApiClient;
     LocationManager mLocationManager;
-    LocationListener mLocationListener;
+    WearMapsLocationListener mWearMapsLocationListener;
     private Node mWearableNode = null;
-    FusedLocationListener mFusedLocationListener;
-
-    @Override
-    public void onReceiveLocation(Location location) {
-        if(D) Log.d(TAG, "onReceiveLocation");
-        if(D) Log.d(TAG, String.format("location: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
-        sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
-    }
 
     private void sendToWearable(String path, byte[] data, final ResultCallback<MessageApi.SendMessageResult> callback) {
         if (mWearableNode != null) {
@@ -86,10 +73,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                 if(result.getNodes().size()>0) {
                     mWearableNode = result.getNodes().get(0);
                     if(D) Log.d(TAG, "Found wearable: name=" + mWearableNode.getDisplayName() + ", id=" + mWearableNode.getId());
-                    Location location = mFusedLocationListener.getLastLocation();
-                    if(location != null) {
-                        sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
-                    }
+                    try {Thread.sleep(5000);}catch(InterruptedException e){}
                 } else {
                     mWearableNode = null;
                 }
@@ -99,34 +83,56 @@ public class DataLayerListenerService extends WearableListenerService implements
 
     private void onMessageStart() {
         Log.d(TAG, "onMessageStart");
-        if(mFusedLocationListener != null) {
-            mFusedLocationListener.start();
+        if(mLocationManager != null && mWearMapsLocationListener != null) {
+            Criteria myCriteria = new Criteria();
+            myCriteria.setAccuracy(Criteria.ACCURACY_FINE);
+            String myProvider = mLocationManager.getBestProvider(myCriteria, true);
+            mLocationManager.requestLocationUpdates(myProvider, 5000, 0, mWearMapsLocationListener);
         }
+
+        Notification note=new Notification(R.drawable.ic_launcher,
+                "Wear Maps is active",
+                System.currentTimeMillis());
+        Intent i=new Intent(this, MainActivity.class);
+
+        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|
+                Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        PendingIntent pi=PendingIntent.getActivity(this, 0,
+                i, 0);
+
+        note.setLatestEventInfo(this, "Wear Maps",
+                "Wear Maps is active",
+                pi);
+        note.flags|=Notification.FLAG_NO_CLEAR;
+
+        startForeground(1337, note);
     }
 
     private void onMessageStop() {
         Log.d(TAG, "onMessageStop");
-        if(mFusedLocationListener != null) {
-            mFusedLocationListener.stop();
+        // if(Looper.myLooper() != null) { Looper.myLooper().quit(); }
+        if(mLocationManager != null && mWearMapsLocationListener != null) {
+             mLocationManager.removeUpdates(mWearMapsLocationListener);
         }
+        stopForeground(true);
     }
 
     private void onMessageLocate() {
         Log.d(TAG, "onMessageLocate");
-        Location location = mFusedLocationListener.getLastLocation();
-        if(location == null) Log.d(TAG, "got null location");
-        if(location != null) {
-            sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+        if(mLocationManager != null) {
+            Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if(location == null) {
+                location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+            if(location != null) {
+                sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+            }
         }
     }
 
     private void onMessageGet(int y, int x, double latitude, double longitude, int googleZoom) {
         if(D) Log.d(TAG, String.format("onMessageGet(%f, %f, %d)", latitude, longitude, googleZoom));
-
-        // request from wearable comes as byte[]
-        // but is actually an ASCII string
-        // containing 3 parameters formatted
-        // as "latitude longitude googleZoom"
 
         final String maptype = "roadmap";
         final String format = "jpg";
@@ -172,7 +178,14 @@ public class DataLayerListenerService extends WearableListenerService implements
     public void onCreate() {
         if(D) Log.d(TAG, "onCreate");
         super.onCreate();
+        try {
+            Class.forName("android.os.AsyncTask");
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
+
+        Log.d(TAG, "init");
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
@@ -196,12 +209,22 @@ public class DataLayerListenerService extends WearableListenerService implements
 
         mGoogleApiClient.connect();
 
-        mFusedLocationListener = FusedLocationListener.getInstance(getApplicationContext(), this);
+        mWearMapsLocationListener = new WearMapsLocationListener();
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if(Looper.myLooper() == null) { Looper.prepare();Looper.loop(); }
+
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "onStartCommand");
+        return Service.START_STICKY;
     }
 
     @Override
     public void onDestroy() {
         if(D) Log.d(TAG, "onDestroy");
+        mLocationManager.removeUpdates(mWearMapsLocationListener);
         super.onDestroy();
     }
 
@@ -245,4 +268,27 @@ public class DataLayerListenerService extends WearableListenerService implements
         // i don't care
     }
 
+    private class WearMapsLocationListener implements LocationListener {
+        public final boolean D = true;
+        private final String TAG = "WearMapsLocationListener";
+        @Override
+        public void onLocationChanged(Location location) {
+            if(D) Log.d(TAG, String.format("received location: %f %f %f", location.getLatitude(), location.getLongitude(), location.getAccuracy()));
+            sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+        }
+        @Override
+        public void onProviderDisabled(String provider) {
+            if(D) Log.d(TAG, "provider disabled: " + provider);
+        }
+        @Override
+        public void onProviderEnabled(String provider) {
+            if(D) Log.d(TAG, "provider enabled: " + provider);
+        }
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            if(D) Log.d(TAG, "status changed to " + String.valueOf(status));
+        }
+    }
+
 }
+
