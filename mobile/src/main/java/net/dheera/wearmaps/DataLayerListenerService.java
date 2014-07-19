@@ -86,7 +86,10 @@ public class DataLayerListenerService extends WearableListenerService implements
                 if(result.getNodes().size()>0) {
                     mWearableNode = result.getNodes().get(0);
                     if(D) Log.d(TAG, "Found wearable: name=" + mWearableNode.getDisplayName() + ", id=" + mWearableNode.getId());
-
+                    Location location = mFusedLocationListener.getLastLocation();
+                    if(location != null) {
+                        sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+                    }
                 } else {
                     mWearableNode = null;
                 }
@@ -110,6 +113,11 @@ public class DataLayerListenerService extends WearableListenerService implements
 
     private void onMessageLocate() {
         Log.d(TAG, "onMessageLocate");
+        Location location = mFusedLocationListener.getLastLocation();
+        if(location == null) Log.d(TAG, "got null location");
+        if(location != null) {
+            sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
+        }
     }
 
     private void onMessageGet(int y, int x, double latitude, double longitude, int googleZoom) {
@@ -125,7 +133,7 @@ public class DataLayerListenerService extends WearableListenerService implements
 
         InputStream is;
         String url = String.format(
-                "http://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=%d&size=512x512&maptype=%s&format=%s",
+                "http://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=%d&size=512x562&maptype=%s&format=%s",
                 latitude, longitude, googleZoom, maptype, format);
 
         if(D) Log.d(TAG, "onMessageGet: url: " + url);
@@ -160,60 +168,17 @@ public class DataLayerListenerService extends WearableListenerService implements
         return outputStream.toByteArray();
     }
 
-    public static byte[] getBytesFromInputStream(InputStream inStream) throws IOException {
-        long streamLength = inStream.available();
-        if (streamLength > Integer.MAX_VALUE) {
-            // File is too large
-        }
-        byte[] bytes = new byte[(int) streamLength];
-        int offset = 0;
-        int numRead = 0;
-        while (offset < bytes.length
-                && (numRead = inStream.read(bytes,
-                offset, bytes.length - offset)) >= 0) {
-            offset += numRead;
-        }
-        if (offset < bytes.length) {
-            throw new IOException("Could not completely read file ");
-        }
-        inStream.close();
-        return bytes;
-    }
-
     @Override
     public void onCreate() {
         if(D) Log.d(TAG, "onCreate");
         super.onCreate();
-/*
-        Looper.prepare();
-
-        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        mLocationListener = new LocationListener() {
-            public void onLocationChanged(Location location) {
-                if(D) Log.d(TAG, String.format("onLocationChanged: latitude = %f longitude = %f", location.getLatitude(), location.getLongitude()));
-                sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
-            }
-
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-            public void onProviderEnabled(String provider) {}
-
-            public void onProviderDisabled(String provider) {}
-        };*/
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(Bundle connectionHint) {
                         if(D) Log.d(TAG, "onConnected: " + connectionHint);
-                        findWearableNode();/*
-                        Wearable.MessageApi.addListener(mGoogleApiClient, new MessageApi.MessageListener() {
-                            @Override
-                            public void onMessageReceived (MessageEvent m){
-
-                            }
-                        });*/
+                        findWearableNode();
                     }
                     @Override
                     public void onConnectionSuspended(int cause) {
@@ -239,12 +204,14 @@ public class DataLayerListenerService extends WearableListenerService implements
         if(D) Log.d(TAG, "onDestroy");
         super.onDestroy();
     }
+
     @Override
     public void onPeerConnected(Node peer) {
         if(D) Log.d(TAG, "onPeerConnected");
         super.onPeerConnected(peer);
         if(D) Log.d(TAG, "Connected: name=" + peer.getDisplayName() + ", id=" + peer.getId());
     }
+
     @Override
     public void onMessageReceived(MessageEvent m) {
         if(D) Log.d(TAG, "onMessageReceived: " + m.getPath());
@@ -272,6 +239,7 @@ public class DataLayerListenerService extends WearableListenerService implements
             onMessageStop();
         }
     }
+
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
         // i don't care

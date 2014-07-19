@@ -532,7 +532,11 @@ public class TileView extends ZoomPanLayout {
 	public void removeMarker( View view ) {
 		markerManager.removeMarker( view );
 	}
-	
+
+    public void removeAllMarkers( ) {
+        markerManager.removeAllMarkers(  );
+    }
+
 	/**
 	 * Moves an existing marker to another position.
 	 * @param view The marker View to be repositioned.
@@ -865,28 +869,37 @@ public class TileView extends ZoomPanLayout {
 			}
 		}			
 		@Override
-		public void onScaleChanged( double scale ) { 
+		public void onScaleChanged( double scale ) {
+            /*
+            disable zooming for now
 			detailManager.setScale( scale );
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onScaleChanged( scale );
 			}
+            */
 		}
 		@Override
 		public void onZoomStart( double scale ) {
+            /*
+            disable zooming for now
 			detailManager.lockDetailLevel();
 			detailManager.setScale( scale );
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onZoomStart( scale );
 			}
+			*/
 		}
 		@Override
 		public void onZoomComplete( double scale ) {
+            /*
+            disable zooming for now
 			detailManager.unlockDetailLevel();
 			detailManager.setScale( scale );
 			requestRender();  // put this here instead of gesture listener so we catch animations and pinches
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onZoomComplete( scale );
 			}
+            */
 		}
 	};
 	
