@@ -667,18 +667,26 @@ public class ZoomPanLayout extends ViewGroup {
 
 	private void performDrag() {
 		Point delta = new Point();
-		if ( secondFingerIsDown && !firstFingerIsDown ) {
+		/* WearMaps: only want first finger
+		    if ( secondFingerIsDown && !firstFingerIsDown ) {
 			delta.set( lastSecondFinger.x, lastSecondFinger.y );
 			delta.offset( -secondFinger.x, -secondFinger.y );
 		} else {
 			delta.set( lastFirstFinger.x, lastFirstFinger.y );
 			delta.offset( -firstFinger.x, -firstFinger.y );
-		}
-		scrollPosition.offset( delta.x, delta.y );
-		scrollToPoint( scrollPosition );
+		} */
+        if(!secondFingerIsDown) {
+            delta.set(lastFirstFinger.x, lastFirstFinger.y);
+            delta.offset(-firstFinger.x, -firstFinger.y);
+            scrollPosition.offset( delta.x, delta.y );
+            scrollToPoint( scrollPosition );
+        }
 	}
 
 	private boolean performFling() {
+        /* WearMaps: disable flinging for smartwatches */
+        return false;
+        /*
 		if ( secondFingerIsDown ) {
 			return false;
 		}
@@ -691,7 +699,7 @@ public class ZoomPanLayout extends ViewGroup {
 			postInvalidate();
 			return true;
 		}
-		return false;
+		return false; */
 	}
 
 	// if the taps occurred within threshold, it's a double tap
@@ -814,6 +822,7 @@ public class ZoomPanLayout extends ViewGroup {
 		case MotionEvent.ACTION_MOVE:
 			// if both fingers are down, that means it's a pinch
 			if ( firstFingerIsDown && secondFingerIsDown ) {
+                /* WearMaps: do nothing
 				if ( !isPinching ) {
 					double firstFingerDistance = getDistance( firstFinger, firstFingerLastDown );
 					double secondFingerDistance = getDistance( secondFinger, secondFingerLastDown );
@@ -839,7 +848,9 @@ public class ZoomPanLayout extends ViewGroup {
 					for ( GestureListener listener : gestureListeners ) {
 						listener.onPinch( pinchStartOffset );
 					}
-				}				
+				}
+
+				*/
 				// otherwise it's a drag
 			} else {
 				if ( !isDragging ) {

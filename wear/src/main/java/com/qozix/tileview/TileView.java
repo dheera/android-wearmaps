@@ -956,38 +956,48 @@ public class TileView extends ZoomPanLayout {
 		}
 		@Override
 		public void onFling( Point startPoint, Point finalPoint ) {
+            /* fling map is useless for smart watches
 			suppressRender();
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onFling( startPoint.x, startPoint.y, finalPoint.x, finalPoint.y );
 			}
+			*/
 		}
 		@Override
 		public void onFlingComplete( Point point ) {
+             /* fling map is useless for smart watches
 			requestRender();
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onFlingComplete( point.x, point.y );
 			}
+            */
 		}
 		@Override
 		public void onPinch( Point point ) {
+             /* pinch map is useless for smart watches
 			suppressRender();
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onPinch( point.x, point.y );
 			}
+			*/
 		}
 		@Override
 		public void onPinchComplete( Point point ) {
+             /* pinch map is useless for smart watches
 			requestRender();
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onPinchComplete( point.x, point.y );
 			}
+			*/
 		}
 		@Override
 		public void onPinchStart( Point point ) {
+             /* pinch map is useless for smart watches
 			suppressRender();
 			for ( TileViewEventListener listener : tileViewEventListeners ) {
 				listener.onPinchStart( point.x, point.y );
 			}
+			*/
 		}
 		@Override
 		public void onTap( Point point ) {

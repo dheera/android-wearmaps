@@ -1,12 +1,14 @@
 Mini Maps for Android Wear
 ==========================
 
-A mini map for your Android Wear smart watch, pannable like Google Maps and powered by the Google Static Maps API.
-When opened, it should jump to your current GPS location if you have signal.
+ALPHA release: There may be several bugs in this release. Treat this as an early preview (or welcome to help develop). Thanks!
+
+A mini map for your Android Wear smart watch, pannable like Google Maps and powered by the Google Static Maps API. When opened, it should jump to your current GPS location if you have signal.
+
 This is intended to be a demo of what can be done with Android Wear, not a final product.
 If you find your watch not receiving data, try restarting Bluetooth on your phone (occasional issue).
 
-By Dheera Venkatraman
+By Dheera Venkatraman  
 http://dheera.net/
 
 This project is largely a demo. Still some minor hiccups to be worked out.

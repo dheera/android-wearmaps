@@ -39,10 +39,11 @@ import java.util.Scanner;
 public class DataLayerListenerService extends WearableListenerService {
 
     private static final String TAG = "WearMaps/" + String.valueOf((new Random()).nextInt(10000));
-    private static final boolean D = false;
+    private static final boolean D = true;
 
     GoogleApiClient mGoogleApiClient;
     LocationManager mLocationManager;
+    String myProvider = null;
     WearMapsLocationListener mWearMapsLocationListener;
     private Node mWearableNode = null;
 
@@ -86,7 +87,7 @@ public class DataLayerListenerService extends WearableListenerService {
         if(mLocationManager != null && mWearMapsLocationListener != null) {
             Criteria myCriteria = new Criteria();
             myCriteria.setAccuracy(Criteria.ACCURACY_FINE);
-            String myProvider = mLocationManager.getBestProvider(myCriteria, true);
+            myProvider = mLocationManager.getBestProvider(myCriteria, true);
             mLocationManager.requestLocationUpdates(myProvider, 5000, 0, mWearMapsLocationListener);
         }
 
@@ -123,9 +124,13 @@ public class DataLayerListenerService extends WearableListenerService {
         if(mLocationManager != null) {
             Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if(location == null) {
+                if(D) Log.d(TAG, "GPS returned null, trying network ...");
                 location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             }
-            if(location != null) {
+            if(location == null) {
+                if (D) Log.d(TAG, "Network also returned null, doing nothing");
+            } else {
+                if (D) Log.d(TAG, String.format("Got location: %f %f %f", location.getLatitude(), location.getLongitude(), location.getAccuracy()));
                 sendToWearable(String.format("location %f %f", location.getLatitude(), location.getLongitude()), null, null);
             }
         }
