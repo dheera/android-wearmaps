@@ -9,6 +9,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
@@ -17,6 +18,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
@@ -31,6 +33,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Dheera Venkatraman
@@ -66,7 +69,7 @@ public class DataLayerListenerService extends WearableListenerService {
         }
     }
 
-    void findWearableNode() {
+    void findWearableNodeAndBlock() {
         PendingResult<NodeApi.GetConnectedNodesResult> nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient);
         nodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
             @Override
@@ -74,12 +77,19 @@ public class DataLayerListenerService extends WearableListenerService {
                 if(result.getNodes().size()>0) {
                     mWearableNode = result.getNodes().get(0);
                     if(D) Log.d(TAG, "Found wearable: name=" + mWearableNode.getDisplayName() + ", id=" + mWearableNode.getId());
-                    try {Thread.sleep(5000);}catch(InterruptedException e){}
                 } else {
                     mWearableNode = null;
                 }
             }
         });
+        int i = 0;
+        while(mWearableNode == null && i++<50) {
+            try {
+                Thread.sleep(100);
+            } catch(InterruptedException e ) {
+                // don't care
+            }
+        }
     }
 
     private void onMessageStart() {
@@ -112,7 +122,6 @@ public class DataLayerListenerService extends WearableListenerService {
 
     private void onMessageStop() {
         Log.d(TAG, "onMessageStop");
-        // if(Looper.myLooper() != null) { Looper.myLooper().quit(); }
         if(mLocationManager != null && mWearMapsLocationListener != null) {
              mLocationManager.removeUpdates(mWearMapsLocationListener);
         }
@@ -183,40 +192,12 @@ public class DataLayerListenerService extends WearableListenerService {
     public void onCreate() {
         if(D) Log.d(TAG, "onCreate");
         super.onCreate();
+
         try {
             Class.forName("android.os.AsyncTask");
         } catch(ClassNotFoundException e) {
             e.printStackTrace();
         }
-
-
-        Log.d(TAG, "init");
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(Bundle connectionHint) {
-                        if(D) Log.d(TAG, "onConnected: " + connectionHint);
-                        findWearableNode();
-                    }
-                    @Override
-                    public void onConnectionSuspended(int cause) {
-                        if(D) Log.d(TAG, "onConnectionSuspended: " + cause);
-                    }
-                })
-                .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
-                    @Override
-                    public void onConnectionFailed(ConnectionResult result) {
-                        if(D) Log.d(TAG, "onConnectionFailed: " + result);
-                    }
-                })
-                .addApi(Wearable.API)
-                .build();
-
-        mGoogleApiClient.connect();
-
-        mWearMapsLocationListener = new WearMapsLocationListener();
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if(Looper.myLooper() == null) { Looper.prepare();Looper.loop(); }
 
     }
 
@@ -229,7 +210,9 @@ public class DataLayerListenerService extends WearableListenerService {
     @Override
     public void onDestroy() {
         if(D) Log.d(TAG, "onDestroy");
-        mLocationManager.removeUpdates(mWearMapsLocationListener);
+        if(mLocationManager != null) {
+            mLocationManager.removeUpdates(mWearMapsLocationListener);
+        }
         super.onDestroy();
     }
 
@@ -242,35 +225,83 @@ public class DataLayerListenerService extends WearableListenerService {
 
     @Override
     public void onMessageReceived(MessageEvent m) {
-        if(D) Log.d(TAG, "onMessageReceived: " + m.getPath());
         if(D) Log.d(TAG, "onMessageReceived");
         if(D) Log.d(TAG, "path: " + m.getPath());
         if(D) Log.d(TAG, "data bytes: " + m.getData().length);
 
-        Scanner scanner = new Scanner(m.getPath());
-        String requestType = scanner.next();
+        if(mGoogleApiClient == null) {
+            if(D) Log.d(TAG, "setting up GoogleApiClient");
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(Wearable.API)
+                    .build();
+            if(D) Log.d(TAG, "connecting to GoogleApiClient");
+            ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
 
-        if(D) Log.d(TAG, "requestType: " + requestType);
+            if (!connectionResult.isSuccess()) {
+                Log.e(TAG, String.format("GoogleApiClient connect failed with error code %d", connectionResult.getErrorCode()));
+                return;
+            } else {
+                if(D) Log.d(TAG, "GoogleApiClient connect success, finding wearable node");
+                findWearableNodeAndBlock();
+                if(D) Log.d(TAG, "wearable node found");
+            }
+        } else if(mWearableNode == null) {
+            if(D) Log.d(TAG, "GoogleApiClient was connceted but wearable not found, finding wearable node");
+            findWearableNodeAndBlock();
+            if(mWearableNode == null) {
+                if(D) Log.d(TAG, "wearable node not found");
+                return;
+            }
+        }
 
-        if(requestType.equals("get")) {
-            int y = scanner.nextInt();
-            int x = scanner.nextInt();
-            double latitude = scanner.nextDouble();
-            double longitude = scanner.nextDouble();
-            int googleZoom = scanner.nextInt();
-            onMessageGet(y, x, latitude, longitude, googleZoom);
-        } if(requestType.equals("locate")) {
-            onMessageLocate();
-        } if(requestType.equals("start")) {
-            onMessageStart();
-        } if(requestType.equals("stop")) {
-            onMessageStop();
+        if(mWearMapsLocationListener == null) {
+            if(D) Log.d(TAG, "creating mWearMapsLocationListener");
+            mWearMapsLocationListener = new WearMapsLocationListener();
+        }
+
+        if(mLocationManager == null) {
+            if(D) Log.d(TAG, "creating mLocationManager");
+            mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        }
+
+        final String sourceNodeId = m.getSourceNodeId();
+
+        if(sourceNodeId.equals(mWearableNode.getId())) {
+            Scanner scanner = new Scanner(m.getPath());
+            String requestType = scanner.next();
+
+            if (D) Log.d(TAG, "requestType: " + requestType);
+
+            if (requestType.equals("get")) {
+                if(!scanner.hasNextInt()) { if(D) Log.d(TAG, "invalid message parameter"); return; }
+                int y = scanner.nextInt();
+                if(!scanner.hasNextInt()) { if(D) Log.d(TAG, "invalid message parameter"); return; }
+                int x = scanner.nextInt();
+                if(!scanner.hasNextDouble()) { if(D) Log.d(TAG, "invalid message parameter"); return; }
+                double latitude = scanner.nextDouble();
+                if(!scanner.hasNextDouble()) { if(D) Log.d(TAG, "invalid message parameter"); return; }
+                double longitude = scanner.nextDouble();
+                if(!scanner.hasNextInt()) { if(D) Log.d(TAG, "invalid message parameter"); return; }
+                int googleZoom = scanner.nextInt();
+                onMessageGet(y, x, latitude, longitude, googleZoom);
+            }
+            if (requestType.equals("locate")) {
+                onMessageLocate();
+            }
+            if (requestType.equals("start")) {
+                onMessageStart();
+            }
+            if (requestType.equals("stop")) {
+                onMessageStop();
+            }
+        } else {
+            if(D) Log.d(TAG, String.format("doing nothing (wearable node: %s, message source: %s)", mWearableNode.getId(), sourceNodeId));
         }
     }
 
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-        // i don't care
+        // don't care
     }
 
     private class WearMapsLocationListener implements LocationListener {

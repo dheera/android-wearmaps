@@ -709,7 +709,6 @@ public class ZoomPanLayout extends ViewGroup {
 		lastTouchedAt = now;
 		return ( ellapsed <= DOUBLE_TAP_TIME_THRESHOLD ) && ( Math.abs( firstFinger.x - doubleTapHistory.x ) <= SINGLE_TAP_DISTANCE_THRESHOLD )
 				&& ( Math.abs( firstFinger.y - doubleTapHistory.y ) <= SINGLE_TAP_DISTANCE_THRESHOLD );
-
 	}
 
 	private void saveTapActionOrigination() {
@@ -886,6 +885,7 @@ public class ZoomPanLayout extends ViewGroup {
 				}
 			}
 			// or a double tap
+            /* wear maps doesn't want this
 			if ( determineIfQualifiedDoubleTap() ) {
 				scroller.forceFinished( true );
 				saveHistoricalScale();
@@ -901,6 +901,7 @@ public class ZoomPanLayout extends ViewGroup {
 					listener.onDoubleTap( actualPoint );
 				}
 			}
+			*/
 			// either way it's a finger up event
 			for ( GestureListener listener : gestureListeners ) {
 				listener.onFingerUp( actualPoint );
