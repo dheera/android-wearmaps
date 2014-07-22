@@ -5,19 +5,14 @@ ALPHA release: There may be several bugs in this release. Treat this as an early
 
 A mini map for your Android Wear smart watch, pannable like Google Maps and powered by the Google Static Maps API. When opened, it should jump to your current GPS location if you have signal.
 
+Double-tap to reset back to your current location (assuming you have GPS signal).
+Long-press or palm over the entire watch face to quit.
+
 This is intended to be a demo of what can be done with Android Wear, not a final product.
 If you find your watch not receiving data, try restarting Bluetooth on your phone (occasional issue).
 
 By Dheera Venkatraman  
 http://dheera.net/
-
-This project is largely a demo. Still some minor hiccups to be worked out.
-Mount your cell phone on something and use it to take better selfies, group shots, watch a live stream of your kitchen pot, cat, or anything else as long as you have Bluetooth range.
-
-Touch the watch face to take a picture.
-Long-press the watch face for a 5-second self timer.
-
-More features to come soon, but feel free to fork and hack at the code yourself and share your contributions.
 
 ![maps](http://static.dheera.net/images/projects/android-wearmaps/0.jpg)
 
