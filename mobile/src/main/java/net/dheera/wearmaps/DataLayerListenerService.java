@@ -27,6 +27,12 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -161,7 +167,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                 try {
                     // download the image and send it to the wearable
                     try {
-                        byte[] outdata = downloadUrl(new URL(url));
+                        byte[] outdata = downloadUrl2(url);
                         if(D) Log.d(TAG, String.format("read %d bytes", outdata.length));
                         sendToWearable(String.format("response %d %d %f %f %d", y, x, latitude, longitude, googleZoom), outdata, null);
                     } catch(Exception e) {
@@ -175,6 +181,19 @@ public class DataLayerListenerService extends WearableListenerService implements
         }).start();
 
 
+    }
+
+    private byte[] downloadUrl2(String url) {
+        HttpGet httpGet = new HttpGet(url);
+        HttpClient httpclient = new DefaultHttpClient();
+        byte[] content;
+        try {
+            HttpResponse response = httpclient.execute(httpGet);
+            return EntityUtils.toByteArray(response.getEntity());
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private byte[] downloadUrl(URL toDownload) {

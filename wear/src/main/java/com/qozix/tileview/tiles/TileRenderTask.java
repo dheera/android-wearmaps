@@ -48,14 +48,27 @@ class TileRenderTask extends AsyncTask<Void, Tile, Void> {
 					return null;
 				}
 				// once the bitmap is decoded, the heavy lift is done
+
 				tileManager.decodeIndividualTile( m );
 				// pass it to the UI thread for insertion into the view tree
 				publishProgress( m );
+                // launchRenderAndPublish(tileManager, m);
 			}
 			
 		}		
 		return null;
 	}
+
+    /*
+    private void launchRenderAndPublish(final TileManager t, final Tile m) {
+        new Thread(new Runnable() {
+            public void run() {
+                t.decodeIndividualTile( m );
+                // pass it to the UI thread for insertion into the view tree
+                publishProgress( m );
+            }
+        }).start();
+    } */
 
 	@Override
 	protected void onProgressUpdate( Tile... params ) {

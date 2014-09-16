@@ -304,8 +304,8 @@ public class TileManager extends ScalingLayout implements DetailLevelEventListen
 	}
 	
 	// package level access so it can be invoked by the render task
-	void decodeIndividualTile( Tile m ) {
-		m.decode( getContext(), cache, decoder );
+	void decodeIndividualTile( final Tile m ) {
+                m.decode(getContext(), cache, decoder);
 	}
 
 	// package level access so it can be invoked by the render task
