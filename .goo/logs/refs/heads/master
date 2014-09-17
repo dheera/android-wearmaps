@@ -1,0 +1,15 @@
+0000000000000000000000000000000000000000 23f21c493c38996e9661b1f598ae693761eb01df Dheera Venkatraman <dheera@dheera.net> 1405636478 +0000	commit (initial): init
+23f21c493c38996e9661b1f598ae693761eb01df 3d25a00025388992bc4284c179150a4a7d0e2d8b Dheera Venkatraman <dheera@dheera.net> 1405636504 +0000	pull -u origin master: Merge made by the 'recursive' strategy.
+3d25a00025388992bc4284c179150a4a7d0e2d8b 155e27d0469d3998fe5d311268698bced8db3db2 Dheera Venkatraman <dheera@dheera.net> 1405690250 +0000	commit: fixed Mercator projection equations for vertical tiling; fixed tile refresh with a blocking loop workaround
+155e27d0469d3998fe5d311268698bced8db3db2 4927bba0e9d90b15d5e3b323109a405b8922ca3a Dheera Venkatraman <dheera@dheera.net> 1405695730 +0000	commit: move mobile side to listener service
+4927bba0e9d90b15d5e3b323109a405b8922ca3a 6449c8229a3c93c7fef58eb630df3593a47984f4 Dheera Venkatraman <dheera@dheera.net> 1405698783 +0000	commit: fused location provider doesn't complain about looper
+6449c8229a3c93c7fef58eb630df3593a47984f4 2f4d78030150338da2e53a52004d86abbec604ca Dheera Venkatraman <dheera@dheera.net> 1405743754 +0000	commit: caching issue
+2f4d78030150338da2e53a52004d86abbec604ca 7d0d5564d284cd36287ad6bab93bc397d31a6b3d Dheera Venkatraman <dheera@dheera.net> 1405774338 +0000	commit: alpha release
+7d0d5564d284cd36287ad6bab93bc397d31a6b3d 04dc550847c0822a29ce8968086b63aa2238513a Dheera Venkatraman <dheera@dheera.net> 1405775407 +0000	commit: readme
+04dc550847c0822a29ce8968086b63aa2238513a a30755735bb455a0f400b5786ce96493016fad26 Dheera Venkatraman <dheera@dheera.net> 1405804329 +0000	commit: disable flinging, easy to fling to the middle of nowhere
+a30755735bb455a0f400b5786ce96493016fad26 a7571b75f1a0105bfd762bf71e2c653d336d7e76 Dheera Venkatraman <dheera@dheera.net> 1405805469 +0000	commit: more stable frameToo to avoid funny states of TileView
+a7571b75f1a0105bfd762bf71e2c653d336d7e76 d3fa7500aaddf0e3966727aca017dd6df9dc9b4d Dheera Venkatraman <dheera@dheera.net> 1405833970 +0000	commit: rearrange DataLayerListenerService; fix double tap bug
+d3fa7500aaddf0e3966727aca017dd6df9dc9b4d ed1925c5a1958c27312e97e1f7bcab2258f06d61 Dheera Venkatraman <dheera@dheera.net> 1406041618 +0000	commit: reduce map tile size; use external storage for cache
+ed1925c5a1958c27312e97e1f7bcab2258f06d61 144099b56846bf67ed19f50fac633bb044401425 Dheera Venkatraman <dheera@dheera.net> 1406041676 +0000	pull -u origin master: Merge made by the 'recursive' strategy.
+144099b56846bf67ed19f50fac633bb044401425 8c29ca5486db13a880295c988a1be070308dfa54 Dheera Venkatraman <dheera@dheera.net> 1410894805 +0000	commit: upd
+8c29ca5486db13a880295c988a1be070308dfa54 de4294d65f3a330a09a1a9117de372c75ca30e2f Dheera Venkatraman <dheera@dheera.net> 1410973112 +0000	commit: round face fix

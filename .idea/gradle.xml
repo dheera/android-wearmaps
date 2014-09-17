@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+<<<<<<< HEAD
+            <option value="$USER_HOME$/Dropbox/docs/code/WearMaps" />
+            <option value="$USER_HOME$/Dropbox/docs/code/WearMaps/mobile" />
+            <option value="$USER_HOME$/Dropbox/docs/code/WearMaps/wear" />
+=======
+            <option value="$USER_HOME$/Dropbox/docs/code/android-wearmaps" />
+            <option value="$USER_HOME$/Dropbox/docs/code/android-wearmaps/mobile" />
+            <option value="$USER_HOME$/Dropbox/docs/code/android-wearmaps/wear" />
+>>>>>>> 4cd88bc4c506aa6b072b9764b7c8cebee4de3161
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
+

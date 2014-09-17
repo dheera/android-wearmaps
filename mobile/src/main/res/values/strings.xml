@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Mini Maps</string>
+    <string name="hello_world">Please start this application on your Android Wear device.</string>
+    <string name="action_settings">Settings</string>
+
+</resources>

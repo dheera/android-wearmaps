@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="play-services-wearable-5.0.77">
+    <CLASSES>
+<<<<<<< HEAD
+      <root url="jar://$USER_HOME$/Dropbox/docs/code/WearMaps/mobile/build/intermediates/exploded-aar/com.google.android.gms/play-services-wearable/5.0.77/classes.jar!/" />
+      <root url="file://$USER_HOME$/Dropbox/docs/code/WearMaps/mobile/build/intermediates/exploded-aar/com.google.android.gms/play-services-wearable/5.0.77/res" />
+=======
+      <root url="jar://$USER_HOME$/Dropbox/docs/code/android-wearmaps/mobile/build/intermediates/exploded-aar/com.google.android.gms/play-services-wearable/5.0.77/classes.jar!/" />
+      <root url="file://$USER_HOME$/Dropbox/docs/code/android-wearmaps/mobile/build/intermediates/exploded-aar/com.google.android.gms/play-services-wearable/5.0.77/res" />
+>>>>>>> 4cd88bc4c506aa6b072b9764b7c8cebee4de3161
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

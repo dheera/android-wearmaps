@@ -1,0 +1,11 @@
+Merge branch 'master' of github.com:/dheera/android-wearmaps
+
+Conflicts:
+	.idea/gradle.xml
+	.idea/libraries/disklrucache_1_3_1.xml
+	.idea/libraries/play_services_wearable_5_0_77.xml
+	.idea/libraries/support_v13_20_0_0.xml
+	.idea/libraries/support_v4_20_0_0.xml
+	.idea/libraries/wearable_1_0_0.xml
+	mobile/mobile.iml
+	wear/wear.iml
