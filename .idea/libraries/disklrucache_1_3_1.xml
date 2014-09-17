@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="disklrucache-1.3.1">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/wear/libs/disklrucache-1.3.1.jar!/" />
+      <root url="jar://$USER_HOME$/Dropbox/docs/code/android-wearmaps/wear/libs/disklrucache-1.3.1.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
